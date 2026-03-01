@@ -1,4 +1,4 @@
-# Oracle Database CI/CD
+# Database CI/CD
 
 **Automated & Isolated Database Testing:** Before deploying to production, test database changes in an isolated clone of the production environment.
 
@@ -54,10 +54,10 @@ Introducing SQLcl Projects for Database Developers:
 
    ```
    # Initialize a new project
-   SQL> PROJECT init --name <name> --makeroot --schemas <schema>
+   SQL> PROJECT init -name <name> -makeroot -schemas <schema>
 
    # Initialize git repository
-   SQL> !git init -fai tea-initial-branch=main
+   SQL> !git init --initial-branch=main
    SQL> !git add .
    SQL> !git commit -m "chore: initializing <name> git repository"
    ```
