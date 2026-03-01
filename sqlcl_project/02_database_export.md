@@ -1,110 +1,93 @@
-# 02 - Database Export
+# 03 - Stage Changes
 
-The export step captures the current state of the database objects into the project directory as versioned files. Unlike project creation, this command is run **repeatedly** — every time you want to sync the repository with the current state of the database.
+The stage step generates **Liquibase changelogs and changesets** from the `src/` files (exported database objects) and any custom SQL files, then produces deployment-ready artifacts under `dist/releases/next/`.
+
+> **Important:** `project stage` is blocked on protected branches (e.g. `main`). It must always be run from a feature branch. SQLcl enforces this and will return an error if attempted on a protected branch.
+
+The baseline established by `project export` on `main` (the `src/` files) is the reference point. Changelogs are always generated as diffs between a feature branch and `main`.
 
 ---
 
-## Simple Export
+## Stage
+
+On a feature branch, `project stage` diffs the current branch against the reference branch and generates changelogs only for what changed:
 
 ```
-SQL> project export
+SQL> project stage
 ```
 
-Exports all objects from the schemas configured during `project init`. This is the baseline command and requires no additional parameters.
-
-To target specific schemas explicitly:
+The reference branch defaults to the value of `git.defaultBranch` in the project config (fallback: `develop`). To specify it explicitly:
 
 ```
-SQL> project export -schemas <schema1>,<schema2>
+SQL> project stage -branch-name <branch>
 ```
 
 ### Useful flags
 
 | Flag | Description |
 |------|-------------|
-| `-schemas` | Comma-separated list of schemas to export |
-| `-objects` | Comma-separated list of specific objects to export (e.g. `HR.EMPLOYEES`) or a specific APEX app (e.g. `APEX.100`) |
-| `-threads` | Number of concurrent threads for the export (default: 5) |
+| `-branch-name` | Branch to use as the comparison base. Defaults to the value of `git.defaultBranch` in the config (fallback: `develop`) |
 | `-verbose` | Displays additional details during the process |
-| `-debug` | Displays debug information, including how filters are applied |
-| `-list` | Lists all exportable objects without actually exporting |
-
-### Simple Export (Dry Run)
-
-```
-SQL> project export -list
-```
-
-Lists every object that would be exported — based on the configured schemas and any active filters — without writing any files to disk. Useful to verify the export scope before running the actual export, or to confirm that filters are excluding the right objects.
+| `-debug` | Displays debug information in the output |
 
 ---
 
-## Filtered Export
+## Feature Branch Workflow (main → feature1)
 
-For a more precise export, SQLcl supports **filter files**. A filter file contains SQL `WHERE`-style conditions that are applied to the data dictionary queries used during export, allowing you to exclude unwanted object types, names, or grants.
+With only `main` and `feature1` branches, `main` is the reference. Since the default fallback is `develop` (which does not exist), you must always pass `-branch-name main` explicitly when staging from a feature branch.
 
-### Filter file location
+### Step-by-step
 
-```
-.dbtools/filters/project.filters
-```
-
-This file is created inside your project directory and should be committed to Git along with the rest of the project configuration.
-
-### Excluding privileges
-
-To exclude system and object privileges from the export, add the following conditions to the filter file:
+**1. Switch to the feature branch**
 
 ```
-export_type not in ('ALL_TAB_PRIVS','USER_SYS_PRIVS')
+SQL> !git checkout feature1
 ```
 
-### Other common filters
+**2. Apply your database changes**
 
-Exclude specific object types:
+Make the desired changes directly in the database (new tables, modified procedures, etc.).
 
-```
-object_type not in ('MLE_MODULE', 'MLE_ENVIRONMENT')
-```
-
-Exclude objects matching a name pattern:
-
-```
-object_name not like 'DEV_ONLY_%'
-```
-
-Exclude grants from a specific schema:
-
-```
-grantor != 'SOME_SCHEMA'
-```
-
-### Running the filtered export
-
-No additional flag is needed — SQLcl automatically reads the filter file from `.dbtools/filters/project.filters` when it exists:
+**3. Export the updated objects**
 
 ```
 SQL> project export
 ```
 
-Use `-debug` to verify that your filters are being applied correctly:
+This overwrites the relevant files in `src/` with the current state of the database.
+
+**4. Stage the changes against main**
 
 ```
-SQL> project export -debug
+SQL> project stage -branch-name main
 ```
+
+SQLcl diffs `feature1` against `main` and generates changelogs only for what changed, writing them to `dist/releases/next/feature1/`.
+
+**5. Commit and push**
+
+```
+SQL> !git add .
+SQL> !git commit -m "feat: <description>"
+SQL> !git push
+```
+
+> **Note:** if you run `project stage` without `-branch-name main`, SQLcl will look for a `develop` branch which does not exist and the command will fail.
 
 ---
 
-## Exporting a Specific APEX Application
+## Adding a Custom SQL File
 
-To export a single APEX application, use the `APEX.<app_id>` syntax with the `-objects` flag and specify the schema that owns the APEX workspace:
+Custom SQL files (e.g. data migrations, one-off scripts) can be included in the stage using the `add-custom` subcommand:
 
 ```
-SQL> project export -objects APEX.<app_id> -schemas <schema>
+SQL> project stage add-custom -file-name <file-name>
 ```
 
 Example:
 
 ```
-SQL> project export -objects APEX.100 -schemas APEXUSER
+SQL> project stage add-custom -file-name feature1.sql
 ```
+
+The specified file is added to the staged changeset alongside the auto-generated object changelogs.
