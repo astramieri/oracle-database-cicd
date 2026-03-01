@@ -1,4 +1,4 @@
-# 01- Project Initialize
+# 01 - Project Initialize
 
 ## 1. Initialize the SQLcl Project
 
