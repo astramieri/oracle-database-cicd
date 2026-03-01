@@ -1,4 +1,4 @@
-# 01- Project Creation
+# 01- Project Initialize
 
 ## 1. Initialize the SQLcl Project
 
@@ -47,4 +47,3 @@ SQL> !git push -u origin main
 ```
 
 Pushes the local `main` branch to the `origin` remote. The `-u` flag (short for `--set-upstream`) is required on the **first push** — it establishes a tracking relationship between the local and remote branch, so subsequent pushes can be done with just `git push`.
-
