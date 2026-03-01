@@ -1,4 +1,4 @@
-# 04 - Artifact Generation
+# 05 - Artifact Generation
 
 Artifact generation is the final packaging step. It consists of two commands that work in sequence:
 
