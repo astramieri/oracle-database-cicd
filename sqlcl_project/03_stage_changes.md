@@ -72,7 +72,7 @@ SQL> !git commit -m "feat: <description>"
 SQL> !git push
 ```
 
-> **Note:** if you run `project stage` without `-branch-name main`, SQLcl will look for a `develop` branch which does not exist and the command will fail.
+> **Note:** If you run `project stage` without `-branch-name main`, SQLcl will look for a `develop` branch which does not exist and the command will fail.
 
 ---
 
